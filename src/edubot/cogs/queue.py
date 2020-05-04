@@ -230,7 +230,7 @@ class ReviewQueue(Queue):
                                   f'Your patience will soon be rewarded, {member.name}... You\'re fifth in line for the queue in <#{ctx.channel.id}>!' +
                                   '' if getvoicechan(member) else ' Please join a general voice channel so you can be moved!')
 
-    async def putback(self, ctx, pos):
+    async def putback(self, ctx, pos, tamsg):
         ''' Put the student you currently have in your voice channel back in the queue. '''
         uid, qid, voicechan = self.assigned.get(
             ctx.author.id, (False, False, False))
@@ -241,7 +241,10 @@ class ReviewQueue(Queue):
             member = await ctx.guild.fetch_member(uid)
             if readymovevoice(member):
                 await member.edit(voice_channel=voicechan)
-            await self.bot.dm(member, 'You were moved back into the queue, probably because you didn\'t respond.')
+            if tamsg == '':
+                await self.bot.dm(member, 'You were moved back into the queue, probably because you didn\'t respond.')
+            else:
+                await self.bot.dm(member, f'You were moved backed into the queue, because {tamsg}')
 
 
 class QuestionQueue(Queue):
@@ -428,7 +431,7 @@ class QueueCog(commands.Cog):
         await ctx.message.delete()
         await Queue.queues[qid].takenext(ctx)
 
-    @commands.command()
+    @commands.command(rest_is_raw=True)
     @commands.check(lambda ctx: Queue.qcheck(ctx, 'Review'))
     @commands.has_permissions(administrator=True)
     async def putback(self, ctx, pos : int = 10):
@@ -436,10 +439,24 @@ class QueueCog(commands.Cog):
 
             Arguments:
             - pos: The position in the queue to put the student. (optional)
-              Default position is 10. '''
+              Default position is 10.
+            - str: A custom message to the student. (optional)
+              Non-alpha characters pruned from start of string.'''
         qid = (ctx.guild.id, ctx.channel.id)
+        if ctx.message.content in ['!putback', '!putback ']:
+            tamsg = ''
+        elif :
+
+        else:
+            offset = 8
+            for i in ctx.message.content[8:]:
+                if i.isalpha():
+                    break
+                else:
+                    offset += 1
+            tamsg = ctx.message.content[offset:].strip()
         await ctx.message.delete()
-        await Queue.queues[qid].putback(ctx, pos)
+        await Queue.queues[qid].putback(ctx, pos, tamsg)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
